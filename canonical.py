@@ -13,5 +13,3 @@ def canonical_energy(beta:float, eigen_energies:np.array):
     Z = np.sum(temp)
     temp = temp*E
     return np.sum(temp)/Z
-    
-

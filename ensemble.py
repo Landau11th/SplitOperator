@@ -1,0 +1,121 @@
+# -*- coding: utf-8 -*-
+"""
+Created on Wed Apr 11 13:57:04 2018
+
+@author: e0008730
+"""
+import numpy as np
+import types
+import math
+
+import matplotlib.pyplot as plt
+import pandas as pd
+import SplitOperatorMethod as SOM
+
+
+def ensemble(beta:float, spins:int, N_t:int, tau:float, B_t:types.FunctionType):
+    spinch = SOM.SpinChain(spins, N_t, tau, B_t)
+        
+    H_0 = spinch.Hamiltonian(0)
+    values_0, vectors_0 = np.linalg.eig(H_0)
+    #evolve states
+    init = vectors_0.copy()
+    final = spinch.time_evolution(init)
+    H_tau = spinch.Hamiltonian(N_t)
+    values_tau, vectors_tau = np.linalg.eig(H_tau)
+    
+    #Amp_i->j = final_i dot vector_tau_j
+    Amp = np.dot(final.conj().T, vectors_tau)
+    Transition = np.absolute(Amp)
+    Transition = Transition*Transition
+
+    dim = len(values_0)
+    E_0 = values_0.real
+    E_0 = np.reshape(np.repeat(E_0,dim), (dim,dim))
+    E_tau = values_tau.real
+    E_tau = np.reshape(np.repeat(E_tau,dim), (dim,dim))
+    #W_i->j = E_tau_j - E_0_i
+    W = E_tau.T - E_0
+    
+    p_0 = np.exp(-beta * values_0.real)
+    Z_0 = np.sum(p_0)
+    F_0 = -beta*math.log(Z_0)
+    p_0 = p_0/Z_0
+    
+    p_tau = np.exp(-beta * values_tau.real)
+    Z_tau = np.sum(p_tau)
+    F_tau = -beta*math.log(Z_tau)
+    p_tau = p_tau/Z_tau
+    
+    #to_measure = np.exp(-beta*W.T)
+    to_measure = W.T
+
+    error = np.dot(np.exp(-beta*W.T)*Transition, p_0).sum()-math.exp(-beta*(F_tau - F_0))
+    if error > 1e-10:
+        print('error=',error,'>1e-10')
+    
+    #return the avrerage of quantity we wish to calculate
+    return np.dot(to_measure*Transition, p_0).sum()
+
+
+if __name__ =='__main__':
+    N_iters = 20
+    tau_min = 100
+    tau_max = 1000000
+    N_t_min = 2000
+    N_t_max = 200000
+    dt = 0.1
+    
+    beta_hot = 0.5
+    beta_cold = 1.0
+    
+    taus = np.array(range(N_iters + 1))
+    taus = math.log(tau_max/tau_min)*taus/N_iters
+    taus = tau_min*np.exp(taus)
+    
+    Ws_positive=[]
+    Ws_negative=[]
+    
+    count = 0
+    for tau in taus:
+        print('running ', count,'/', N_iters,end='\r')
+        count=count+1
+        
+        spins = 5
+        N_t = int(tau/dt)
+        if N_t < N_t_min:
+            N_t = N_t_min
+        elif N_t > N_t_max:
+            N_t = N_t_max
+        
+        def B_t(i:int):
+            #Bx = 0 will produce error. why?
+            #change z component
+            Bx = 0.2
+            By = 0.2
+            Bz = 1.0*np.sin((np.pi/2.0)*i/N_t)
+#            #change y component
+#            Bx = 0.1
+#            By = 0.5*np.sin((np.pi/2.0)*i/N_t)
+#            Bz = 0.2
+            return np.array([Bx, By, Bz])
+        
+        def B_t_revert(i:int):
+            return B_t(N_t-i)
+    
+        Ws_positive.append(ensemble(beta_cold, spins, N_t, tau, B_t))
+        Ws_negative.append(ensemble(beta_hot , spins, N_t, tau, B_t_revert))
+    
+    #savefile to csv
+    a = pd.DataFrame({'taus': taus, 'mean_W_positvie': Ws_positive, 'mean_W_negative':Ws_negative})
+    a.to_csv('average_W_z.csv')
+    
+    fig, ax = plt.subplots()
+    
+    ax.semilogx(taus, Ws_positive,'bo', taus, Ws_negative, 'ro')
+    #ax.semilogx(tau, sigma, 'x')
+    ax.grid()
+    #plt.savefig('test.png')
+    plt.show()
+    
+    
