@@ -6,6 +6,11 @@ Created on Fri Mar 28 15:26:59 2018
 """
 
 import numpy as np
+import types
+import math
+
+import matplotlib.pyplot as plt
+import pandas as pd
 
 class SplitOperator:
     def __init__(self, matrix_dim:int, N_t:int, tau:float):
