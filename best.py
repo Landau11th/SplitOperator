@@ -10,11 +10,11 @@ import math
 
 import matplotlib.pyplot as plt
 import pandas as pd
-import SpinChain as spch
+import SplitOperatorMethod as SOM
 
 
 def ensemble(beta:float, spins:int, N_t:int, tau:float, B_t_dep:types.FunctionType):
-    spinch = spch.SpinChain(spins, N_t, tau, B_t_dep)
+    spinch = SOM.SpinChain(spins, N_t, tau, B_t_dep)
     #eigenstates
     H_0 = spinch.Hamiltonian(0)
     values_0, vectors_0 = np.linalg.eig(H_0)
@@ -95,11 +95,11 @@ if __name__ =='__main__':
             #Bx = 0.2
             #By = 0.2
             #Bz = 0.4*float(i)/N_t + 0.1
-            Bx = -0.3
-            By = -0.3
+            Bx = 0.3
+            By = 0.3
             #Bz = 0.5*(1.0 - float(i)/N_t)
             #Bz = 0.5*(0.2+float(i)/N_t)
-            Bz = -0.5*math.sin(math.pi/2.0*float(i)/N_t) - 0.3
+            Bz = 0.5*math.sin(math.pi/2.0*float(i)/N_t) + 0.3
             #Bz = 0.5*np.sin((np.pi/2.0)*i/N_t)
 #            #change y component
 #            Bx = 0.1
@@ -110,11 +110,8 @@ if __name__ =='__main__':
         def B_t_revert(i:int):
             return B_t(N_t-i)
     
-        Ws_forward.append(ensemble(beta_hot, spins, N_t, tau, B_t))
-        Ws_backward.append(ensemble(beta_cold, spins, N_t, tau, B_t_revert))
-        
-        #Ws_forward.append(ensemble(beta_cold, spins, N_t, tau, B_t_revert))
-        #Ws_backward.append(ensemble(beta_hot , spins, N_t, tau, B_t))
+        Ws_forward.append(ensemble(beta_cold, spins, N_t, tau, B_t))
+        Ws_backward.append(ensemble(beta_hot , spins, N_t, tau, B_t_revert))
     
     #savefile to csv
     a = pd.DataFrame({'taus': taus, 'mean_W_forward': Ws_forward, 'mean_W_backward':Ws_backward})
