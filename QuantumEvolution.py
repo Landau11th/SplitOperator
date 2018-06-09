@@ -6,11 +6,7 @@ Created on Fri Mar 28 15:26:59 2018
 """
 
 import numpy as np
-import types
-import math
 
-import matplotlib.pyplot as plt
-import pandas as pd
 
 class QuantumEvolution:
     def __init__(self, matrix_dim:int, N_t:int, tau:float):
@@ -26,7 +22,7 @@ class QuantumEvolution:
         return H
     
     #let the state evolve time period of dt
-    def one_step(self, init_state:np.array, i:int):
+    def one_step(self, init_state, i:int): #may need init_state:np.array
         #since H(t) = self.Hamiltonian(i)
         d, Eig = np.linalg.eig(self.Hamiltonian(i))
         D = np.diag(np.exp((0-1j)*d*self._dt))
@@ -39,6 +35,20 @@ class QuantumEvolution:
         for i in range(self._N_t):
             phi = self.one_step(phi, i)
         return phi
+    
+class SplitOperator(QuantumEvolution):
+    def __init__(self, matrix_dim:int, N_t:int, tau:float):
+        QuantumEvolution.__init__(self, matrix_dim, N_t, tau)
+    
+    def kinetic_H(self, i:int):
+        raise TypeError('Kinetic part of Hamiltonian must be defined and return values!')
+    
+    def potential_H(self, i:int):
+        raise TypeError('Potential part of Hamiltonian must be defined and return values!')
+    
+    #let the state evolve time period of dt
+    def one_step(self, init_state, i:int):
+        raise TypeError('Time evolution part must be defined and return values!')
 
 #to do proper outer product and convert to 2D matrix
 def my_outer(A:np.matrix, B:np.matrix):
